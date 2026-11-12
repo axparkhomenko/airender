@@ -119,7 +119,8 @@ def build_room(spec, output_dir, final):
 
     # Floor, ceiling and wall shell. Openings are represented by separate
     # jamb/header elements for clarity in this initial visual prototype.
-    floor = cube("Floor_Main", (w/2, length/2, -0.04), (w, length, 0.08), oak_mat)
+    cube("Floor_Substrate", (w/2, length/2, -0.045), (w, length, 0.08), material("Mat_Floor_Substrate", (0.22,0.18,0.13), 0.8))
+    create_herringbone_floor("Parquet_Plank", w, length, z=0.0, plank_length=0.60, plank_width=0.10, thickness=0.012)
     ceiling = cube("Ceiling_Main", (w/2, length/2, h+0.06), (w, length, 0.12), ceiling_mat)
     wall_t = 0.12
     cube("Wall_West_Mirror", (-wall_t/2, length/2, h/2), (wall_t, length, h), wall_mat)
@@ -245,13 +246,12 @@ def build_room(spec, output_dir, final):
 
     output_dir.mkdir(parents=True, exist_ok=True)
     blend_path = output_dir / (spec["project_name"] + ".blend")
-    bpy.ops.wm.save_as_mainfile(filepath=str(blend_path))
-
     camera_specs = spec["render"]["cameras"]
     for camera_spec in camera_specs:
         target_dir = output_dir / ("final" if final else "preview")
         target_dir.mkdir(parents=True, exist_ok=True)
         add_camera(spec, camera_spec, target_dir, final)
+    bpy.ops.wm.save_as_mainfile(filepath=str(blend_path))
     print(f"Airender scene saved: {blend_path}")
     print(f"Rendered {'final' if final else 'preview'} images to: {output_dir}")
 
