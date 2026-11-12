@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "blender": {
+      "comment": "Replace with the actual command and arguments documented by the Blender MCP addon version you installed.",
+      "command": "uvx",
+      "args": ["REPLACE_WITH_VERIFIED_BLENDER_MCP_PACKAGE"]
+    },
+    "freecad": {
+      "comment": "Optional. Replace with the actual FreeCAD MCP server/addon launch command for your installation.",
+      "command": "uvx",
+      "args": ["REPLACE_WITH_VERIFIED_FREECAD_MCP_PACKAGE"]
+    }
+  }
+}
