@@ -57,7 +57,7 @@ The Blender scripts use Blender's bundled Python API and Python standard library
    ```
 
 5. Inspect the clay preview images in `output/preview`. Change the JSON or layout code and rerun until the geometry and camera composition are approved.
-6. For final rendering, run with `--final`:
+7. For final rendering, run with `--final`:
 
    ```powershell
    blender --background --python .\\scripts\\build_bedroom.py -- --spec .\\config\\bedroom_neoclassical.json --output .\\output --final
