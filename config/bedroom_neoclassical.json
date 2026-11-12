@@ -1,0 +1,134 @@
+{
+  "project_name": "Neoclassical_Bedroom_Suite_01",
+  "units": "mm",
+  "coordinate_system": {
+    "origin": "south_west_floor_corner",
+    "x": "room_width",
+    "y": "room_length",
+    "z": "up"
+  },
+  "room_dimensions_mm": {
+    "width_x": 4200,
+    "length_y": 5400,
+    "ceiling_height_z": 3100,
+    "wardrobe_start_y": 4000
+  },
+  "openings": [
+    {
+      "name": "Window_East",
+      "wall": "east",
+      "width": 2200,
+      "height": 2400,
+      "sill_height": 450,
+      "center_along_wall": 2700
+    },
+    {
+      "name": "Door_South",
+      "wall": "south",
+      "width": 900,
+      "height": 2300,
+      "sill_height": 0,
+      "center_along_wall": 800
+    }
+  ],
+  "design": {
+    "style": "Modern Neoclassical with botanical chinoiserie mural accents",
+    "wall_color_hex": "#E5DFD5",
+    "wardrobe_ceiling_color_hex": "#8FA3B2",
+    "floor_wood": "warm_oak",
+    "accent_colors": ["dusty_blue", "muted_sage", "terracotta", "brushed_brass"],
+    "mural": {
+      "enabled": true,
+      "seed": 42,
+      "width_px": 2048,
+      "height_px": 1536
+    }
+  },
+  "furniture": {
+    "bed": {
+      "name": "Bed_Frame",
+      "width": 1800,
+      "length": 2100,
+      "headboard_height": 1250,
+      "position_mm": [1200, 650, 0]
+    },
+    "nightstands": {
+      "width": 500,
+      "depth": 450,
+      "height": 550,
+      "offset_from_bed_sides": 100
+    },
+    "vanity": {
+      "width": 1200,
+      "depth": 550,
+      "height": 750,
+      "position_mm": [2700, 2650, 0]
+    },
+    "mirror": {
+      "width": 1100,
+      "height": 2400,
+      "bottom_z": 150
+    }
+  },
+  "details": {
+    "boiserie": {
+      "enabled": true,
+      "frame_width_m": 0.045,
+      "depth_m": 0.018,
+      "lower_panel_height_m": 0.65,
+      "upper_panel_height_m": 1.65
+    },
+    "fluted_partition": {
+      "enabled": true,
+      "y_mm": 4000,
+      "width_mm": 1800,
+      "height_mm": 2400,
+      "panel_count": 3
+    },
+    "led_color_temperature_k": 2700,
+    "sconce_color_temperature_k": 2700,
+    "sconce_mount_height_mm": 1700
+  },
+  "render": {
+    "engine": "CYCLES",
+    "preview": {
+      "resolution_x": 1280,
+      "resolution_y": 720,
+      "percentage": 50,
+      "samples": 32
+    },
+    "final": {
+      "resolution_x": 2560,
+      "resolution_y": 1440,
+      "percentage": 100,
+      "samples": 320
+    },
+    "camera_height_mm": 1250,
+    "cameras": [
+      {
+        "name": "Cam_01_Hero_Bed",
+        "lens_mm": 24,
+        "target_mm": [2100, 1300, 1450],
+        "position_mm": [2100, -2600, 1650],
+        "resolution_x": 2560,
+        "resolution_y": 1440
+      },
+      {
+        "name": "Cam_02_Vanity_Wardrobe",
+        "lens_mm": 28,
+        "target_mm": [2900, 3300, 1450],
+        "position_mm": [700, 1800, 1650],
+        "resolution_x": 2560,
+        "resolution_y": 1440
+      },
+      {
+        "name": "Cam_03_Mirror_Detail",
+        "lens_mm": 50,
+        "target_mm": [250, 2500, 1700],
+        "position_mm": [1800, 1600, 1750],
+        "resolution_x": 1920,
+        "resolution_y": 2400
+      }
+    ]
+  }
+}
