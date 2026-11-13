@@ -1,8 +1,7 @@
 """Local OpenWebUI-to-Blender bridge for Airender.
 
-Run on localhost. The LLM returns a complete room-spec JSON document; this
-service validates it, backs up the previous spec, and optionally renders only
-the preview. It never runs final-quality rendering.
+The service edits and validates a room specification, creates Blender scenes,
+and optionally renders previews. It never runs final-quality rendering.
 """
 from __future__ import annotations
 
@@ -23,7 +22,9 @@ ROOT = Path(__file__).resolve().parents[1]
 SPEC_PATH = ROOT / "config" / "bedroom_neoclassical.json"
 VALIDATOR_PATH = ROOT / "scripts" / "validate_spec.py"
 BUILDER_PATH = ROOT / "scripts" / "build_bedroom.py"
+SMOKE_TEST_PATH = ROOT / "scripts" / "blender_smoke_test.py"
 OUTPUT_DIR = ROOT / "output"
+SMOKE_TEST_BLEND = OUTPUT_DIR / "airender_blender_smoke_test.blend"
 
 LLM_BASE_URL = os.getenv("AIR_RENDER_LLM_BASE_URL", "http://127.0.0.1:4000/v1").rstrip("/")
 LLM_API_KEY = os.getenv("AIR_RENDER_LLM_API_KEY", "local-dev")
@@ -33,8 +34,8 @@ REQUEST_TIMEOUT = int(os.getenv("AIR_RENDER_TIMEOUT_SECONDS", "1800"))
 
 app = FastAPI(
     title="Airender Local API",
-    description="Natural-language room design updates for the local Blender scene.",
-    version="0.1.0",
+    description="Natural-language room design updates and Blender scene generation.",
+    version="0.2.0",
 )
 
 
@@ -48,6 +49,24 @@ def load_spec() -> dict[str, Any]:
         return json.loads(SPEC_PATH.read_text(encoding="utf-8"))
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Cannot read current project spec: {exc}") from exc
+
+
+def blender_version() -> dict[str, Any]:
+    try:
+        completed = subprocess.run(
+            [BLENDER_EXE, "--background", "--version"],
+            cwd=str(ROOT), capture_output=True, text=True,
+            timeout=60, check=False,
+        )
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=503, detail=f"Blender executable not found: {BLENDER_EXE}") from exc
+    except subprocess.TimeoutExpired as exc:
+        raise HTTPException(status_code=504, detail="Blender version check timed out.") from exc
+    log = (completed.stdout or "") + "\n" + (completed.stderr or "")
+    if completed.returncode != 0:
+        raise HTTPException(status_code=500, detail={"message": "Blender version check failed.", "log_tail": log[-4000:]})
+    first_line = next((line.strip() for line in log.splitlines() if line.strip()), "Blender version available")
+    return {"executable": BLENDER_EXE, "version": first_line, "return_code": completed.returncode}
 
 
 def ask_model(user_prompt: str, current_spec: dict[str, Any]) -> dict[str, Any]:
@@ -146,6 +165,47 @@ def health():
         "llm_base_url": LLM_BASE_URL,
         "llm_model": LLM_MODEL or None,
         "blender_executable": BLENDER_EXE,
+    }
+
+
+@app.get("/blender/diagnostics", operation_id="blender_diagnostics")
+def blender_diagnostics():
+    """Run Blender's version check to verify the executable and shared libraries."""
+    return {"status": "ok", **blender_version()}
+
+
+@app.post("/blender/smoke-test", operation_id="run_blender_smoke_test")
+def run_blender_smoke_test():
+    """Create a tiny test .blend file without modifying the room specification or rendering."""
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    command = [
+        BLENDER_EXE, "--background", "--python", str(SMOKE_TEST_PATH), "--",
+        "--output", str(SMOKE_TEST_BLEND),
+    ]
+    try:
+        completed = subprocess.run(
+            command, cwd=str(ROOT), capture_output=True, text=True,
+            timeout=180, check=False,
+        )
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=503, detail=f"Blender executable not found: {BLENDER_EXE}") from exc
+    except subprocess.TimeoutExpired as exc:
+        raise HTTPException(status_code=504, detail="Blender smoke test timed out after 180 seconds.") from exc
+
+    log = (completed.stdout or "") + "\n" + (completed.stderr or "")
+    if completed.returncode != 0 or not SMOKE_TEST_BLEND.is_file():
+        raise HTTPException(status_code=500, detail={
+            "message": "Blender smoke test failed; no test .blend file was confirmed.",
+            "return_code": completed.returncode,
+            "log_tail": log[-8000:],
+        })
+    return {
+        "status": "ok",
+        "message": "Blender created the smoke-test scene successfully. No project specification was changed and no render was started.",
+        "blender": blender_version(),
+        "blend_file": str(SMOKE_TEST_BLEND.relative_to(ROOT)).replace("\\", "/"),
+        "size_bytes": SMOKE_TEST_BLEND.stat().st_size,
+        "log_tail": log[-3000:],
     }
 
 
