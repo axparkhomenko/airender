@@ -24,7 +24,7 @@ internal gateway. Host-side ports are loopback-only.
 4. Run the bootstrap script below. It creates a local .env with strong random
    secrets if one does not already exist. Keep .env private and do not commit it.
 
-Recommended PowerShell bootstrap (creates strong local secrets if .env does not yet exist):
+Recommended PowerShell bootstrap:
 
 ```powershell
 .\scripts\start-docker.ps1
@@ -66,11 +66,40 @@ Add a server, select **OpenAPI**, and configure:
 - Spec path: `/openapi.json`
 
 Verify the connection and save it. Enable the Airender tool server for the
-chat. Main operation: `apply_design_prompt`; `get_project_spec` reads the
-current brief and `airender_health` checks the service. Tool calls are made
-from the OpenWebUI backend, so the internal Docker DNS address is correct.
-Do not replace it with localhost: inside a container, localhost means that
-container itself.
+chat. Available operations include:
+- `airender_health`: check the API process.
+- `blender_diagnostics`: run Blender's version check.
+- `run_blender_smoke_test`: create a small test .blend file without touching
+  the bedroom specification or starting a render.
+- `get_project_spec`: read the current room brief.
+- `apply_design_prompt`: update the room brief and render a preview.
+
+Tool calls are made from the OpenWebUI backend, so the internal Docker DNS
+address is correct. Do not replace it with localhost: inside a container,
+localhost means that container itself.
+
+### First Blender test from OpenWebUI
+
+After enabling the tools, open a chat using the `airender` model and ask:
+
+```text
+Проверь доступность Blender через blender_diagnostics.
+Если проверка успешна, вызови run_blender_smoke_test и создай тестовую сцену.
+Не изменяй спецификацию спальни и не запускай рендер.
+Сообщи точный путь к созданному .blend-файлу и его размер.
+```
+
+The expected file is `output/airender_blender_smoke_test.blend` in the
+project folder on Windows. The smoke test creates a floor, cube, camera, and
+light, saves the scene, and does not render. This is a technical test, not the
+first architectural bedroom scene.
+
+You can also check the file from PowerShell:
+
+```powershell
+Test-Path .\output\airender_blender_smoke_test.blend
+Get-Item .\output\airender_blender_smoke_test.blend | Select-Object FullName, Length
+```
 
 ### Reuse an existing OpenWebUI container
 
@@ -110,13 +139,11 @@ unless the tool confirms success. Preview first; never initiate a final render
 without explicit user approval. Distinguish visualization from construction BIM.
 ```
 
-Example: "Сделай стены теплее, замени пыльно-голубые акценты на оливковые,
-но не меняй размеры комнаты и расположение мебели."
-
 ## 4. Check the services
 
 ```powershell
 Invoke-RestMethod http://localhost:8765/health
+Invoke-RestMethod http://localhost:8765/blender/diagnostics
 Invoke-RestMethod http://localhost:8765/project/spec
 Invoke-RestMethod http://localhost:4001/health/liveliness
 docker compose logs --tail 100 airender-api litellm open-webui ollama
