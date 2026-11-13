@@ -75,6 +75,32 @@ the service.
 Use the internal Docker DNS address above, not localhost: from inside the
 OpenWebUI container, localhost refers to OpenWebUI itself.
 
+### Reuse an existing OpenWebUI container
+
+The Compose stack also starts its own OpenWebUI on port 3334, leaving port 3333
+free for an existing installation. If you prefer to keep using your current
+OpenWebUI container instead of the included one:
+
+1. Start the Airender stack as usual.
+2. Find the existing container name with `docker ps`.
+3. Attach that container to the Airender network:
+
+   ```powershell
+   docker network connect airender-net <existing-open-webui-container>
+   ```
+
+4. In that existing OpenWebUI, add an OpenAI-compatible connection:
+   - Base URL: `http://litellm:4000/v1`
+   - API key: the value of `LITELLM_MASTER_KEY` from the project's local
+     `.env` file.
+5. Add the Airender OpenAPI tool server using the same internal URL and path
+   listed above.
+
+The existing container can then reach both services by Docker DNS without
+exposing their internal ports to the LAN. You can stop only the bundled UI
+with `docker compose stop open-webui`; this does not stop LiteLLM, Ollama,
+or the Airender API.
+
 Suggested model system prompt:
 
 ```text
