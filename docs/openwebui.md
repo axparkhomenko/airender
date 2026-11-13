@@ -14,6 +14,11 @@ http://airender-api:8000/openapi.json
 
 This is the internal Docker DNS address, not localhost. Enable the Airender Local tools for the `airender` model.
 
+The server exposes `blender_diagnostics` to verify the Blender executable and
+`run_blender_smoke_test` to create `output/airender_blender_smoke_test.blend`
+without changing the room specification or rendering. Ask the model to run
+those tools before requesting a room preview.
+
 ## Non-Docker / host-run API
 
 If you run only the Airender API on the host, use the steps below instead of the Compose instructions.
