@@ -1,102 +1,152 @@
 # Airender — Local Architectural Visualization Pipeline
 
-A Windows-first, open-source starter project for turning a structured room brief into a parametric-ish Blender scene and client-ready architectural renders. The first reference workflow is a modern-neoclassical bedroom with a walk-in wardrobe.
+A Windows-first architectural-visualization starter project. Describe room
+changes in OpenWebUI; a local LLM updates the internal room brief, validates
+it, and drives a headless Blender preview build.
 
-## What this repository does
+## What the project includes
 
-- Builds a named, dimensioned interior scene in Blender using Python and metric units.
-- Generates reusable materials and details: oak herringbone parquet, boiserie frames, fluted glass, warm LED coves, brass sconces, and a procedural chinoiserie-inspired mural.
-- Creates three architectural cameras and renders a clay preview before a final image pass.
-- Keeps the room brief in JSON as an internal, reviewable source of truth.
-- Provides an OpenWebUI chat integration so design changes can be requested in natural language instead of hand-editing JSON.
-- Documents optional FreeCAD/BIM and MCP integration points.
+- OpenWebUI chat as the natural-language project interface.
+- Ollama running a local Qwen model.
+- LiteLLM as the OpenAI-compatible gateway shared by OpenWebUI and Airender.
+- A FastAPI service that converts a prompt into an updated room brief, validates
+  it, makes a timestamped backup, and runs preview rendering.
+- Blender 5.2.3 in a Linux container for headless scene generation.
+- Procedural materials and details: oak herringbone parquet, boiserie frames,
+  fluted glass, warm LED coves, brass sconces, and a chinoiserie-inspired mural.
+- A sample modern-neoclassical bedroom with wardrobe zone and three cameras.
 
-## What it does not claim to do
+## Quick start — Docker Desktop on Windows
 
-This starter is an **interior visualization workflow**, not a certified construction-documentation system. It does not calculate structural adequacy, certify code compliance, produce signed/stamped drawings, or replace review by a licensed architect/engineer. A Blender render is not a construction drawing. For BIM/IFC schedules, dimensioned plans/sections, clash checking, and jurisdiction-specific code checks, integrate and validate a dedicated BIM toolchain (for example FreeCAD/Bonsai + IfcOpenShell) as a separate stage.
+1. Install and start Docker Desktop with the WSL 2 backend and Linux containers.
+2. Clone this repository.
+3. Open PowerShell in the repository root.
+4. Run:
 
-## Repository layout
+   ```powershell
+   .\scripts\start-docker.ps1
+   ```
+
+   The script creates a local `.env` with fresh secrets if one does not
+   already exist, then builds and starts the Compose stack.
+5. Wait for the first model download (qwen2.5:7b; several GB).
+6. Open [http://localhost:3334](http://localhost:3334) and create the first
+   OpenWebUI administrator account.
+7. In OpenWebUI, go to **Settings → Admin → Integrations → External Tool
+   Servers**, add an **OpenAPI** server:
+   - Server URL: `http://airender-api:8000`
+   - Spec path: `/openapi.json`
+8. Verify and save the tool server, then enable its tools in your chat.
+
+Full instructions, health checks, port changes, and optional NVIDIA setup:
+[docs/docker-desktop.md](docs/docker-desktop.md).
+
+## Docker services
+
+| Service | URL from Windows host | Role |
+|---|---|---|
+| OpenWebUI | http://localhost:3334 | Chat UI |
+| LiteLLM | http://localhost:4001 | OpenAI-compatible gateway |
+| Ollama | http://localhost:11435 | Local inference |
+| Airender API | http://localhost:8765 | Project tools and preview workflow |
+
+The containers use Docker DNS names to reach each other. For example, the
+Airender API calls LiteLLM at `http://litellm:4000/v1`. Do not replace internal
+container URLs with localhost.
+
+Useful commands:
+
+```powershell
+docker compose ps
+docker compose logs -f
+docker compose down
+docker compose up -d --build
+```
+
+Do not run `docker compose down -v` unless you intend to delete the Ollama
+model cache and OpenWebUI chat/account data.
+
+## Project structure
 
 ```text
 config/
-  bedroom_neoclassical.json     # Editable room brief (millimetres)
-  mcp.example.json              # Client-neutral MCP configuration example
+  bedroom_neoclassical.json
+  mcp.example.json
 docs/
-  architecture.md               # Pipeline boundaries and setup notes
-  openwebui.md                  # OpenWebUI chat-to-Blender setup
+  architecture.md
+  docker-desktop.md
+  openwebui.md
+litellm/
+  config.yaml
 server/
-  airender_api.py               # Local API exposed to OpenWebUI as an OpenAPI tool
-  requirements.txt              # API-only dependencies
-prompts/
-  agent_system.md               # Agent operating rules and starter prompt
+  airender_api.py
+  requirements.txt
 scripts/
-  archviz_generators.py         # Reusable Blender material/detail generators
-  build_bedroom.py              # Builds the example room and renders preview/final
+  archviz_generators.py
+  build_bedroom.py
+  validate_spec.py
+  start-docker.ps1
+Dockerfile
+docker-compose.yml
+docker-compose.nvidia.yml
+.env.example
 ```
 
-## Requirements
+## Model
 
-- Windows 10/11 (paths in examples use Windows conventions)
-- Blender 4.x (4.2 LTS recommended)
-- Optional: FreeCAD 1.0+ and a compatible FreeCAD MCP addon/server
-- Docker Desktop with Linux containers / WSL 2 backend (recommended)\n- The Compose stack includes OpenWebUI, LiteLLM, Ollama, the Airender API, and headless Blender
+Default Ollama model: `qwen2.5:7b`, exposed by LiteLLM under the model name
+`airender`. It is the initial local baseline for prompt interpretation,
+JSON editing, and tool calling. Model speed depends on available system
+memory and hardware. To change models, update the pull setting in
+`docker-compose.yml` and the provider model in `litellm/config.yaml`.
 
-The Blender scripts use Blender's bundled Python API and Python standard library only. No pip install is required for the scene-generation scripts.
+CPU mode is the default. Optional NVIDIA configuration is documented in
+[docs/docker-desktop.md](docs/docker-desktop.md).
 
-## Quick start
+## Manual / developer workflow
 
-1. Install Blender 4.x.
-2. Clone this repository.
-3. Treat measurements from the example as illustrative until verified on site. For normal use, connect OpenWebUI and describe changes in chat; the JSON brief is updated internally. See [docs/openwebui.md](docs/openwebui.md).
-4. Open Blender, switch to the Scripting workspace, and run:
+The JSON room brief remains the internal source of truth, but normal design
+changes should be requested through OpenWebUI rather than editing it directly.
+For developer-level work, the Blender builder can still be run manually:
 
-   ```python
-   exec(compile(open(r"path\\to\\airender\\scripts\\build_bedroom.py", encoding="utf-8").read(),
-                "build_bedroom.py", "exec"))
-   ```
+```powershell
+blender --background --python .\scripts\build_bedroom.py -- --spec .\config\bedroom_neoclassical.json --output .\output
+```
 
-   Or run Blender in background mode:
+Run validation independently:
 
-   ```powershell
-   & "C:\\Program Files\\Blender Foundation\\Blender 4.2\\blender.exe" --background --python .\\scripts\\build_bedroom.py -- --spec .\\config\\bedroom_neoclassical.json --output .\\output
-   ```
+```powershell
+python .\scripts\validate_spec.py .\config\bedroom_neoclassical.json
+```
 
-5. Inspect the clay preview images in `output/preview`. Refine the design through OpenWebUI or, for developer-level changes, update the scripts.
-6. For final rendering, run with `--final`:
-
-   ```powershell
-   blender --background --python .\\scripts\\build_bedroom.py -- --spec .\\config\\bedroom_neoclassical.json --output .\\output --final
-   ```
-
-The script saves a `.blend` scene and PNG renders. The exact output paths are printed in the Blender console.
+Final rendering is deliberately not triggered by the chat API. Use the
+separate manual `--final` workflow only after reviewing the preview.
 
 ## Coordinate convention
 
-- JSON dimensions are millimetres.
-- Blender scene coordinates are metres.
+- JSON dimensions are millimetres; Blender scene coordinates are metres.
 - X = room width, Y = room length, Z = up.
 - Room origin is the south-west floor corner.
 - Main sleeping zone occupies Y=0..4.0 m; wardrobe zone occupies Y=4.0..5.4 m.
-- Wall and opening placements are generated from the JSON brief. Confirm every opening and furniture clearance against measured drawings before use.
+- Confirm every opening, furniture clearance, and the bed/headboard orientation
+  against measured drawings before use.
 
-## Render stages
+## Scope and limitations
 
-- Preview: clay materials, low resolution, 64 samples.
-- Final: Cycles, GPU when available (CPU fallback), OpenImageDenoise, AgX, 320 samples by default.
-- Cameras: 24 mm hero, 28 mm vanity/wardrobe, 35 mm detail. Camera framing is generated from scene bounds and can be adjusted.
+This is an interior visualization workflow, not certified BIM or construction
+documentation. It does not calculate structural adequacy, certify code
+compliance, produce signed/stamped drawings, or replace a licensed architect
+or engineer. Treat example dimensions as illustrative until verified on site.
+For IFC, schedules, dimensioned plans/sections, and clash checking, integrate
+and validate a dedicated BIM toolchain separately.
 
 ## MCP integration
 
-See [docs/architecture.md](docs/architecture.md), [docs/docker-desktop.md](docs/docker-desktop.md), and [prompts/agent_system.md](prompts/agent_system.md). MCP server launch commands are intentionally not hard-coded as universal truths: addon versions and MCP clients differ. Configure the actual installed FreeCAD/Blender server entry points using their current upstream instructions.
-
-## Safety and production workflow
-
-1. Verify measured dimensions and levels.
-2. Generate geometry.
-3. Review preview renders and clearances.
-4. If construction output is needed, export to a BIM/CAD application and validate dimensions, classifications, schedules, and code requirements independently.
-5. Obtain professional review before construction or procurement.
+See [docs/architecture.md](docs/architecture.md) and
+[prompts/agent_system.md](prompts/agent_system.md). MCP server launch commands
+are not hard-coded as universal truths because addon versions and clients vary.
 
 ## License
 
-No license has been selected yet. Add a license after deciding how you want this repository to be reused.
+No license has been selected yet. Add a license after deciding how the project
+should be reused.
