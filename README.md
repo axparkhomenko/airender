@@ -34,7 +34,7 @@ scripts/
 - Windows 10/11 (paths in examples use Windows conventions)
 - Blender 4.x (4.2 LTS recommended)
 - Optional: FreeCAD 1.0+ and a compatible FreeCAD MCP addon/server
-- Optional: an MCP-capable client and a locally hosted model
+- Optional: OpenWebUI and a locally hosted OpenAI-compatible model endpoint (LiteLLM/Ollama)
 
 The Blender scripts use Blender's bundled Python API and Python standard library only. No pip install is required for the scene-generation scripts.
 
