@@ -39,7 +39,7 @@ scripts/
 - Windows 10/11 (paths in examples use Windows conventions)
 - Blender 4.x (4.2 LTS recommended)
 - Optional: FreeCAD 1.0+ and a compatible FreeCAD MCP addon/server
-- Optional: OpenWebUI and a locally hosted OpenAI-compatible model endpoint (LiteLLM/Ollama)
+- Docker Desktop with Linux containers / WSL 2 backend (recommended)\n- The Compose stack includes OpenWebUI, LiteLLM, Ollama, the Airender API, and headless Blender
 
 The Blender scripts use Blender's bundled Python API and Python standard library only. No pip install is required for the scene-generation scripts.
 
@@ -87,7 +87,7 @@ The script saves a `.blend` scene and PNG renders. The exact output paths are pr
 
 ## MCP integration
 
-See [docs/architecture.md](docs/architecture.md) and [prompts/agent_system.md](prompts/agent_system.md). MCP server launch commands are intentionally not hard-coded as universal truths: addon versions and MCP clients differ. Configure the actual installed FreeCAD/Blender server entry points using their current upstream instructions.
+See [docs/architecture.md](docs/architecture.md), [docs/docker-desktop.md](docs/docker-desktop.md), and [prompts/agent_system.md](prompts/agent_system.md). MCP server launch commands are intentionally not hard-coded as universal truths: addon versions and MCP clients differ. Configure the actual installed FreeCAD/Blender server entry points using their current upstream instructions.
 
 ## Safety and production workflow
 
