@@ -12,8 +12,11 @@ if ($LASTEXITCODE -ne 0) {
 
 if (-not (Test-Path ".env")) {
     function New-Secret([string]$prefix) {
-        $bytes = [Security.Cryptography.RandomNumberGenerator]::GetBytes(32)
-        return $prefix + [Convert]::ToHexString($bytes).ToLowerInvariant()
+        $bytes = New-Object byte[] 32
+        $rng = [Security.Cryptography.RandomNumberGenerator]::Create()
+        try { $rng.GetBytes($bytes) } finally { $rng.Dispose() }
+        $hex = ([BitConverter]::ToString($bytes) -replace "-", "").ToLowerInvariant()
+        return $prefix + $hex
     }
     $lines = @(
         "LITELLM_MASTER_KEY=$(New-Secret 'sk-airender-')"
