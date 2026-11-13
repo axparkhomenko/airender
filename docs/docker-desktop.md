@@ -21,9 +21,8 @@ internal gateway. Host-side ports are loopback-only.
 1. Install and start Docker Desktop.
 2. Ensure Docker Desktop is using Linux containers and the WSL 2 backend.
 3. Clone this repository or pull the latest main branch.
-4. Copy .env.example to .env.
-5. Replace the three example secrets with unique long random values. Keep .env
-   private and do not commit it.
+4. Run the bootstrap script below. It creates a local .env with strong random
+   secrets if one does not already exist. Keep .env private and do not commit it.
 
 Recommended PowerShell bootstrap (creates strong local secrets if .env does not yet exist):
 
@@ -60,20 +59,18 @@ the administrator.
 
 ## 3. Enable the Airender tool in OpenWebUI
 
-In OpenWebUI Admin Panel, find the Tools / OpenAPI Servers configuration (the
-menu label can vary by version) and add this OpenAPI schema URL:
+In OpenWebUI go to **Settings → Admin → Integrations → External Tool Servers**.
+Add a server, select **OpenAPI**, and configure:
 
-```
-http://airender-api:8000/openapi.json
-```
+- Server URL: `http://airender-api:8000`
+- Spec path: `/openapi.json`
 
-Name it **Airender Local** and save it. Enable its tools for the **airender**
-model in chat/tool settings. Main operation: `apply_design_prompt`.
-`get_project_spec` reads the current brief and `airender_health` checks
-the service.
-
-Use the internal Docker DNS address above, not localhost: from inside the
-OpenWebUI container, localhost refers to OpenWebUI itself.
+Verify the connection and save it. Enable the Airender tool server for the
+chat. Main operation: `apply_design_prompt`; `get_project_spec` reads the
+current brief and `airender_health` checks the service. Tool calls are made
+from the OpenWebUI backend, so the internal Docker DNS address is correct.
+Do not replace it with localhost: inside a container, localhost means that
+container itself.
 
 ### Reuse an existing OpenWebUI container
 
