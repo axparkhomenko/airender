@@ -25,7 +25,13 @@ internal gateway. Host-side ports are loopback-only.
 5. Replace the three example secrets with unique long random values. Keep .env
    private and do not commit it.
 
-PowerShell:
+Recommended PowerShell bootstrap (creates strong local secrets if .env does not yet exist):
+
+```powershell
+.\scripts\start-docker.ps1
+```
+
+Or create the file manually:
 
 ```powershell
 Copy-Item .env.example .env
