@@ -45,7 +45,7 @@ http://127.0.0.1:8765/openapi.json
 Give the tool a name such as Airender Local. Enable that tool for the model you use in chat. The operations are:
 - apply_design_prompt: send a natural-language design instruction; by default it updates the brief and generates preview renders.
 - get_project_spec: inspect the current structured brief.
-- health_health_get (operation naming may vary in the UI): check service configuration.
+- airender_health: check service configuration.
 
 If OpenWebUI runs in Docker, 127.0.0.1 inside its container is not the Windows host. Use a host-reachable address such as http://host.docker.internal:8765/openapi.json where supported, and make the API listen on an interface reachable from that container. Do not expose this unauthenticated development API to the public internet.
 
