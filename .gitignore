@@ -1,0 +1,10 @@
+.env
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+output/
+*.blend
+*.blend1
+config/*.backup-*.json
+config/*.failed-*.json
