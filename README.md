@@ -7,7 +7,8 @@ A Windows-first, open-source starter project for turning a structured room brief
 - Builds a named, dimensioned interior scene in Blender using Python and metric units.
 - Generates reusable materials and details: oak herringbone parquet, boiserie frames, fluted glass, warm LED coves, brass sconces, and a procedural chinoiserie-inspired mural.
 - Creates three architectural cameras and renders a clay preview before a final image pass.
-- Keeps the room brief in JSON so dimensions and design intent are reviewable and versionable.
+- Keeps the room brief in JSON as an internal, reviewable source of truth.
+- Provides an OpenWebUI chat integration so design changes can be requested in natural language instead of hand-editing JSON.
 - Documents optional FreeCAD/BIM and MCP integration points.
 
 ## What it does not claim to do
@@ -22,6 +23,10 @@ config/
   mcp.example.json              # Client-neutral MCP configuration example
 docs/
   architecture.md               # Pipeline boundaries and setup notes
+  openwebui.md                  # OpenWebUI chat-to-Blender setup
+server/
+  airender_api.py               # Local API exposed to OpenWebUI as an OpenAPI tool
+  requirements.txt              # API-only dependencies
 prompts/
   agent_system.md               # Agent operating rules and starter prompt
 scripts/
@@ -42,7 +47,7 @@ The Blender scripts use Blender's bundled Python API and Python standard library
 
 1. Install Blender 4.x.
 2. Clone this repository.
-3. Edit `config/bedroom_neoclassical.json` to match the measured room. Treat measurements from the example as illustrative until verified on site.
+3. Treat measurements from the example as illustrative until verified on site. For normal use, connect OpenWebUI and describe changes in chat; the JSON brief is updated internally. See [docs/openwebui.md](docs/openwebui.md).
 4. Open Blender, switch to the Scripting workspace, and run:
 
    ```python
@@ -56,8 +61,8 @@ The Blender scripts use Blender's bundled Python API and Python standard library
    & "C:\\Program Files\\Blender Foundation\\Blender 4.2\\blender.exe" --background --python .\\scripts\\build_bedroom.py -- --spec .\\config\\bedroom_neoclassical.json --output .\\output
    ```
 
-5. Inspect the clay preview images in `output/preview`. Change the JSON or layout code and rerun until the geometry and camera composition are approved.
-7. For final rendering, run with `--final`:
+5. Inspect the clay preview images in `output/preview`. Refine the design through OpenWebUI or, for developer-level changes, update the scripts.
+6. For final rendering, run with `--final`:
 
    ```powershell
    blender --background --python .\\scripts\\build_bedroom.py -- --spec .\\config\\bedroom_neoclassical.json --output .\\output --final
