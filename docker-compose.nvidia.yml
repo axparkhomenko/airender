@@ -1,0 +1,5 @@
+# Optional override for Docker Desktop + WSL2 + a supported NVIDIA GPU.
+# docker compose -f docker-compose.yml -f docker-compose.nvidia.yml up -d --build
+services:
+  ollama:
+    gpus: all
