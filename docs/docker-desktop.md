@@ -1,0 +1,150 @@
+# Airender on Docker Desktop (Windows)
+
+This Compose stack runs the local model, OpenAI-compatible gateway, OpenWebUI,
+Airender API, and headless Blender renderer.
+
+## Services and ports
+
+| Service | Host URL / port | Purpose |
+|---|---|---|
+| OpenWebUI | http://localhost:3334 | Chat interface |
+| LiteLLM | http://localhost:4001 | OpenAI-compatible model gateway |
+| Ollama | http://localhost:11435 | Local model runtime |
+| Airender API | http://localhost:8765 | OpenAPI tool and project actions |
+
+Host ports are configurable in .env. Containers communicate through Docker DNS
+service names. Airender uses http://litellm:4000/v1; OpenWebUI uses the same
+internal gateway. Host-side ports are loopback-only.
+
+## 1. Prepare the project
+
+1. Install and start Docker Desktop.
+2. Ensure Docker Desktop is using Linux containers and the WSL 2 backend.
+3. Clone this repository or pull the latest main branch.
+4. Copy .env.example to .env.
+5. Replace the three example secrets with unique long random values. Keep .env
+   private and do not commit it.
+
+PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+notepad .env
+```
+
+## 2. Start the stack
+
+From the repository root:
+
+```powershell
+docker compose up -d --build
+```
+
+First startup downloads the containers, builds the Airender image with Blender
+5.2.3, and downloads qwen2.5:7b into the persistent Ollama volume. The model
+download is several GB and may take time.
+
+```powershell
+docker compose ps
+docker compose logs -f ollama-model-init
+```
+
+Open http://localhost:3334 and create the first OpenWebUI account. It becomes
+the administrator.
+
+## 3. Enable the Airender tool in OpenWebUI
+
+In OpenWebUI Admin Panel, find the Tools / OpenAPI Servers configuration (the
+menu label can vary by version) and add this OpenAPI schema URL:
+
+```
+http://airender-api:8000/openapi.json
+```
+
+Name it **Airender Local** and save it. Enable its tools for the **airender**
+model in chat/tool settings. Main operation: `apply_design_prompt`.
+`get_project_spec` reads the current brief and `airender_health` checks
+the service.
+
+Use the internal Docker DNS address above, not localhost: from inside the
+OpenWebUI container, localhost refers to OpenWebUI itself.
+
+Suggested model system prompt:
+
+```text
+You are the Airender architectural visualization assistant.
+For a request to modify the current room, call Airender Local
+apply_design_prompt with the user's natural-language instruction.
+Do not ask the user to edit JSON. Ask a clarifying question when measurements,
+orientation, or layout are ambiguous. Never claim an update or preview exists
+unless the tool confirms success. Preview first; never initiate a final render
+without explicit user approval. Distinguish visualization from construction BIM.
+```
+
+Example: "Сделай стены теплее, замени пыльно-голубые акценты на оливковые,
+но не меняй размеры комнаты и расположение мебели."
+
+## 4. Check the services
+
+```powershell
+Invoke-RestMethod http://localhost:8765/health
+Invoke-RestMethod http://localhost:8765/project/spec
+Invoke-RestMethod http://localhost:4001/health/liveliness
+docker compose logs --tail 100 airender-api litellm open-webui ollama
+```
+
+CPU-only model test through LiteLLM:
+
+```powershell
+$env:KEY = (Select-String '^LITELLM_MASTER_KEY=' .env).Line.Split('=',2)[1]
+$body = @{
+  model = "airender"
+  messages = @(@{ role = "user"; content = "Reply with exactly: Airender model is ready." })
+} | ConvertTo-Json -Depth 8
+Invoke-RestMethod -Method Post -Uri http://localhost:4001/v1/chat/completions -Headers @{ Authorization = "Bearer $env:KEY" } -ContentType "application/json" -Body $body
+```
+
+## 5. Useful commands
+
+```powershell
+docker compose up -d --build
+docker compose down
+docker compose logs -f
+docker compose pull
+docker compose up -d
+```
+
+Do not use `docker compose down -v` unless you intend to delete the
+persistent Ollama model cache and OpenWebUI data.
+
+## Model and hardware
+
+Default model: `qwen2.5:7b`, exposed to OpenWebUI and Airender through
+LiteLLM as `airender`. It is a starter model for instruction following,
+JSON editing, and tool use. Performance depends on RAM/VRAM. The first pull
+requires several GB of disk space.
+
+If changing the model, update both the Ollama pull setting in
+`docker-compose.yml` and the provider model in `litellm/config.yaml`.
+
+CPU mode is the default. For NVIDIA acceleration under Docker Desktop, use
+the WSL 2 backend and a supported NVIDIA driver, then run:
+
+```powershell
+docker compose -f docker-compose.yml -f docker-compose.nvidia.yml up -d --build
+```
+
+GPU passthrough depends on the host GPU, Windows driver, WSL 2, and Docker
+Desktop versions. If Docker reports an unsupported GPU request, use the
+default CPU Compose file. Verify GPU use in Ollama logs; do not assume it.
+
+## Architecture and safety
+
+- API and LiteLLM secrets remain in the local .env file.
+- The API is published only on 127.0.0.1 on the host.
+- OpenWebUI reaches the API over the private Compose network.
+- The project directory is bind-mounted into Airender API, so backups, .blend
+  files, and renders remain in the local repository folders.
+- Ollama models and OpenWebUI data are stored in named Docker volumes.
+- The API only runs preview rendering. Final rendering is not exposed.
+- This is a visualization prototype, not certified BIM or construction output.
