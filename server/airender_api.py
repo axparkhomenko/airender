@@ -137,7 +137,7 @@ def run_preview() -> dict[str, Any]:
     return {"return_code": completed.returncode, "log_tail": log[-6000:]}
 
 
-@app.get("/health")
+@app.get("/health", operation_id="airender_health")
 def health():
     return {
         "status": "ok",
@@ -149,12 +149,12 @@ def health():
     }
 
 
-@app.get("/project/spec")
+@app.get("/project/spec", operation_id="get_project_spec")
 def get_project_spec():
     return load_spec()
 
 
-@app.post("/prompt")
+@app.post("/prompt", operation_id="apply_design_prompt")
 def apply_design_prompt(request: PromptRequest):
     """Interpret a natural-language design request, update the brief, and render preview."""
     current = load_spec()
