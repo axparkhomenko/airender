@@ -107,7 +107,23 @@ def build_room(spec, output_dir, final):
     design = spec["design"]
     wall_mat = material("Mat_Warm_Greige_Plaster", hex_rgb(design["wall_color_hex"]), 0.84)
     ceiling_mat = material("Mat_Ceiling_Warm_White", (0.91, 0.89, 0.85), 0.8)
-    blue_mat = material("Mat_Dusty_Blue", (0.34, 0.45, 0.53), 0.62)
+    # The first accent in the brief drives upholstered accent elements. Named
+    # colors keep natural-language palette changes visible in the Blender scene.
+    accent_palette = {
+        "dusty_blue": (0.34, 0.45, 0.53),
+        "muted_sage": (0.48, 0.55, 0.43),
+        "sage": (0.48, 0.55, 0.43),
+        "olive": (0.39, 0.43, 0.25),
+        "muted_olive": (0.43, 0.46, 0.29),
+        "terracotta": (0.62, 0.31, 0.22),
+        "warm_taupe": (0.48, 0.40, 0.33),
+        "burgundy": (0.32, 0.10, 0.14),
+    }
+    accent_name = (design.get("accent_colors") or ["dusty_blue"])[0].lower().replace(" ", "_")
+    accent_rgb = hex_rgb(design["accent_color_hex"]) if design.get("accent_color_hex") else accent_palette.get(accent_name, accent_palette["dusty_blue"])
+    accent_mat = material("Mat_Accent", accent_rgb, 0.62)
+    wardrobe_rgb = hex_rgb(design["wardrobe_ceiling_color_hex"]) if design.get("wardrobe_ceiling_color_hex") else (0.56, 0.64, 0.70)
+    wardrobe_ceiling_mat = material("Mat_Wardrobe_Ceiling_Accent", wardrobe_rgb, 0.62)
     oak_mat = create_herringbone_parquet_material()
     brass_mat = material("Mat_Brushed_Brass", (0.72, 0.48, 0.18), 0.28, 0.88)
     glass_mat = create_fluted_glass_material()
@@ -138,7 +154,7 @@ def build_room(spec, output_dir, final):
 
     # Wardrobe ceiling accent and partition portal/glass panels.
     cube("Wardrobe_Ceiling_Accent", (w/2, (wardrobe_y+length)/2, h-0.035),
-         (w, length-wardrobe_y, 0.07), blue_mat)
+         (w, length-wardrobe_y, 0.07), wardrobe_ceiling_mat)
     part = spec["details"]["fluted_partition"]
     part_y = part["y_mm"]/1000
     part_w = part["width_mm"]/1000
@@ -164,7 +180,7 @@ def build_room(spec, output_dir, final):
     bw, bl, bh = bed["width"]/1000, bed["length"]/1000, bed["headboard_height"]/1000
     cube("Bed_Frame", (bx+bw/2, by+bl/2, 0.22), (bw, bl, 0.34), material("Mat_Bed_Base", (0.23,0.25,0.28), 0.75), 0.04)
     cube("Bed_Mattress", (bx+bw/2, by+bl/2, 0.43), (bw*0.98, bl*0.98, 0.18), material("Mat_Linen", (0.91,0.89,0.84), 0.9), 0.05)
-    cube("Bed_Headboard", (bx+bw/2, by+bl+0.05, bh/2), (bw, 0.12, bh), blue_mat, 0.06)
+    cube("Bed_Headboard", (bx+bw/2, by+bl+0.05, bh/2), (bw, 0.12, bh), accent_mat, 0.06)
 
     ns = spec["furniture"]["nightstands"]
     nw, nd, nh = ns["width"]/1000, ns["depth"]/1000, ns["height"]/1000
